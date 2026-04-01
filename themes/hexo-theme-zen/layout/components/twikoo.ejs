@@ -1,0 +1,13 @@
+<hr/>
+<div id="twikoo"></div>
+<%- js('js/twikoo.all.min') %>
+<script>
+    const isDark = document.documentElement.classList.contains('dark');
+    twikoo.init({
+        envId: '<%= theme.twikoo.envId %>',
+        el: '#twikoo',
+        region: '<%= theme.twikoo.region || "" %>',
+        lang: '<%= theme.twikoo.lang || "zh-cn" %>',
+        theme: { dark: 'dark', light: 'light' }
+    })
+</script>

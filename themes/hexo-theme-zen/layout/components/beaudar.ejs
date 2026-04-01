@@ -1,0 +1,38 @@
+<hr/>
+<div id="beaudar-container"></div>
+<script>
+    (function() {
+        function loadBeaudar(theme) {
+            const container = document.getElementById('beaudar-container');
+            container.innerHTML = '';
+            
+            const script = document.createElement('script');
+            script.src = 'https://beaudar.lipk.org/client.js';
+            script.setAttribute('repo', '<%= theme.beaudar.repo %>');
+            script.setAttribute('branch', '<%= theme.beaudar.branch %>');
+            script.setAttribute('issue-term', 'url');
+            script.setAttribute('issue-label', 'url');
+            script.setAttribute('label', 'Beaudar');
+            script.setAttribute('theme', theme);
+            script.setAttribute('crossorigin', 'anonymous');
+            script.setAttribute('input-position', 'top');
+            script.async = true;
+            
+            container.appendChild(script);
+        }
+        
+        const isDark = document.documentElement.classList.contains('dark');
+        loadBeaudar(isDark ? 'github-dark' : 'github-light');
+        
+        const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                if (mutation.attributeName === 'class') {
+                    const isDark = document.documentElement.classList.contains('dark');
+                    loadBeaudar(isDark ? 'github-dark' : 'github-light');
+                }
+            });
+        });
+        
+        observer.observe(document.documentElement, { attributes: true });
+    })();
+</script>

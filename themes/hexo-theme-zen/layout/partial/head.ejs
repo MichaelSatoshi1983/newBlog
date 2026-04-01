@@ -1,0 +1,19 @@
+<head>
+    <script>(function(){var s='zen-theme-mode';var l=localStorage.getItem(s);var g=l||(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');if(g==='dark'){document.documentElement.classList.add('dark');}})();</script>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5">
+    <meta name="description" content="<%= config.description %>">
+    <link rel="shortcut icon" href="<%= url_for(theme.favicon) %>" type="image/x-icon" />
+    <title>
+        <% if (page.title) { %>
+            <%= page.title %> |
+        <% } %>
+        <%= config.title %>
+    </title>
+    <%- css('css/style.min') %>
+    <%- css('css/partial/atom-one-dark.min') %>
+    <style>
+        @import url('https://fonts.font.im/css?family=IBM+Plex+Mono');
+    </style>
+    <script src="<%- url_for('js/theme-toggle.js') %>"></script>
+</head>
