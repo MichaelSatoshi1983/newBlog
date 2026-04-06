@@ -27,6 +27,12 @@
     } else {
       document.documentElement.classList.remove('dark');
     }
+    
+    const event = new CustomEvent('theme-change', {
+      detail: { theme: theme }
+    });
+    document.dispatchEvent(event);
+    
     updateButtonIcon(theme);
   }
 
