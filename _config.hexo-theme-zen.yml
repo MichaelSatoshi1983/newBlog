@@ -19,7 +19,7 @@ twikoo:
 
 # beaudar 评论系统配置
 beaudar:
-  enable: true
+  enable: false
   # 填写用于 beaudar 评论系统的 github repo 地址
   repo : MichaelSatoshi1983/newBlog
   # 填写用于 beaudar 评论系统的分支
