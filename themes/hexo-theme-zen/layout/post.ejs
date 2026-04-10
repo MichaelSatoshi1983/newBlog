@@ -7,6 +7,13 @@
     <p>
         <i><time><%= date(page.date, 'YYYY/MM/DD HH:mm:ss' ) %></time></i>
     </p>
+    <% if (page.tags && page.tags.length) { %>
+    <p class="post-tags">
+        <% page.tags.each(function(tag) { %>
+        <a class="tag-link" href="<%- url_for(tag.path) %>">#<%= tag.name %></a>
+        <% }) %>
+    </p>
+    <% } %>
     <div class="post-content">
         <%- page.content %>
     </div>

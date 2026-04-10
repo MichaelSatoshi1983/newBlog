@@ -2,6 +2,7 @@ favicon: favicon.jpg
 
 menu:
   首页: /
+  标签: /tags/
   关于: about.html
 
 copyright:

@@ -3,7 +3,7 @@
         <% var posts=site.posts.sort('date', 'desc' ); %>
             <% posts.forEach(post=> { %>
                 <li>
-                    <span>
+                    <span class="post-date">
                         <i>
                             <time>
                                 <%= date(post.date, 'YYYY/MM/DD' ) %>

@@ -285,3 +285,49 @@
 .dark .post-content .highlight:not(figure) pre .name {
   color: #9fc0ee;
 }
+
+ul.blog-posts li .post-date {
+  flex: 0 0 130px;
+}
+
+.post-tags {
+  margin: 0.38rem 0 0;
+  line-height: 1.5;
+}
+
+.post-tags {
+  margin-bottom: 0.85rem;
+}
+
+.tag-link {
+  display: inline-block;
+  margin-right: 0.55rem;
+  font-size: 0.95em;
+  color: var(--link-color);
+}
+
+.tag-link:visited {
+  color: var(--visited-color);
+}
+
+.tag-cloud {
+  list-style-type: none;
+  padding: 0;
+  margin: 0.8rem 0 0;
+}
+
+.tag-cloud li {
+  display: inline-flex;
+  align-items: baseline;
+  margin: 0 0.95rem 0.65rem 0;
+}
+
+.tag-count {
+  margin-left: 0.35rem;
+  color: var(--muted-text-color);
+  font-size: 0.9em;
+}
+
+.empty-tags {
+  color: var(--muted-text-color);
+}
