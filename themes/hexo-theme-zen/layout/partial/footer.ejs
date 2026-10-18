@@ -23,28 +23,4 @@
         Theme <a href="https://github.com/mouyase/hexo-theme-zen">Zen</a>
     </span>
     <span><a href="<%- url_for('fonts/licenses.html') %>">字体许可</a></span>
-    <span id="cdn-node"></span>
 </footer>
-<script>
-    (function () {
-        function loadCdnNode() {
-            fetch('/cdn-cgi/trace').then(function (r) { return r.text(); }).then(function (t) {
-                var match = t.match(/colo=(\w+)/);
-                if (match) document.getElementById('cdn-node').textContent = ' | CDN: ' + match[1];
-            }).catch(function () {});
-        }
-
-        var footer = document.querySelector('footer');
-        if (!footer || !('IntersectionObserver' in window)) {
-            loadCdnNode();
-            return;
-        }
-
-        var observer = new IntersectionObserver(function (entries) {
-            if (!entries.some(function (entry) { return entry.isIntersecting; })) return;
-            observer.disconnect();
-            loadCdnNode();
-        }, { rootMargin: '150px' });
-        observer.observe(footer);
-    })();
-</script>
