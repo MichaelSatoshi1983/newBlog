@@ -24,10 +24,3 @@ beaudar:
   repo : MichaelSatoshi1983/newBlog
   # 填写用于 beaudar 评论系统的分支
   branch: main
-
-# 底部友情链接配置
-friends:
-  - name: Example
-    url: https://www.examlpe.com/
-  - name: 123
-    url: https://example.com/

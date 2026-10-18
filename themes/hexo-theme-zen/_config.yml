@@ -4,6 +4,7 @@ menu:
   首页: /
   标签: /tags/
   关于: about.html
+  关于网站: /about-website/
 
 copyright:
   name: Yojigen.Tech
@@ -25,8 +26,3 @@ beaudar:
   repo : mouyase/Yojigen.Tech
   # 填写用于 beaudar 评论系统的分支
   branch: main
-
-# 底部友情链接配置
-friends:
-  - name: 示例网站
-    url: https://www.examlpe.com/

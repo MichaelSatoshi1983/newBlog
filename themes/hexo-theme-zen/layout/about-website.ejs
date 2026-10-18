@@ -1,0 +1,24 @@
+<%
+    var commitSha = process.env.WORKERS_CI_COMMIT_SHA || '';
+    var hasCommitSha = /^[a-f0-9]{40}$/i.test(commitSha);
+%>
+<main class="about-website">
+    <h1><%= page.title %></h1>
+    <div class="post-content">
+        <ul id="trace-list" class="trace-list" aria-label="Cloudflare Trace 信息" data-version="<%= hasCommitSha ? commitSha : '' %>"></ul>
+    </div>
+</main>
+<style>
+    .trace-list {
+        list-style: none;
+        margin: 1rem 0;
+        padding: 0;
+    }
+    .trace-list li {
+        padding: 0.45em 0.75em;
+        border-bottom: 1px solid var(--border-color);
+        overflow-wrap: anywhere;
+    }
+    .trace-list li:nth-child(odd) { background: var(--surface-color); }
+</style>
+<script defer src="<%- url_for('js/cf-trace.js') %>"></script>
