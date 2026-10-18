@@ -127,14 +127,6 @@
         }).join('，');
     }
 
-    function formatSecurityEvents(rows) {
-        if (!Array.isArray(rows)) return 'N/A';
-        if (!rows.length) return '0';
-        return rows.map(function (row) {
-            return row.source + '/' + row.action + ': ' + row.events;
-        }).join('，');
-    }
-
     function formatWorkerCpu(value) {
         var formatted = displayValue('workerCpu', value, true);
         return formatted === 'N/A' ? formatted : formatted + ' μs';
@@ -218,7 +210,6 @@
             ['缓存情况', analyticsAvailable ? formatBreakdown(analyticsValues.cache, 'status', 'requests') : 'N/A'],
             ['地区分布', analyticsAvailable ? formatBreakdown(analyticsValues.countries, 'country', 'requests') : 'N/A'],
             ['状态码分布', analyticsAvailable ? formatBreakdown(analyticsValues.statuses, 'status', 'requests') : 'N/A'],
-            ['安全事件', analyticsAvailable ? formatSecurityEvents(analyticsValues.securityEvents) : 'N/A'],
             ['Worker 调用数', analyticsAvailable ? displayValue('workerRequests', analyticsValues.worker && analyticsValues.worker.requests, true) : 'N/A'],
             ['Worker 错误数', analyticsAvailable ? displayValue('workerErrors', analyticsValues.worker && analyticsValues.worker.errors, true) : 'N/A'],
             ['Worker 子请求数', analyticsAvailable ? displayValue('workerSubrequests', analyticsValues.worker && analyticsValues.worker.subrequests, true) : 'N/A'],
