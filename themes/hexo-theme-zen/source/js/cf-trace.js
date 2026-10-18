@@ -3,7 +3,7 @@
     if (!list) return;
     var commitSha = list.getAttribute('data-version') || '';
 
-    var fields = [
+    var traceFields = [
         ['fl', 'Cloudflare 实例标识'],
         ['h', '主机名'],
         ['ip', '访问者 IP'],
@@ -21,22 +21,58 @@
         ['rbi', '远程浏览器隔离状态'],
         ['kex', '密钥交换算法']
     ];
+    var workerFields = [
+        ['asn', 'ASN'],
+        ['asOrganization', '网络组织'],
+        ['continent', '访问大洲'],
+        ['city', 'IP 定位城市'],
+        ['region', 'IP 定位地区'],
+        ['timezone', '访问者时区'],
+        ['clientTcpRtt', 'TCP 往返时延'],
+        ['clientQuicRtt', 'QUIC 往返时延'],
+        ['cfRay', 'CF-Ray 请求标识'],
+        ['cacheStatus', '页面缓存状态']
+    ];
     var labels = {};
-    fields.forEach(function (field) { labels[field[0]] = field[1]; });
+    traceFields.forEach(function (field) { labels[field[0]] = field[1]; });
 
-    function render(values, available) {
+    var traceValues = {};
+    var workerValues = {};
+    var traceAvailable = false;
+    var workerAvailable = false;
+    var cacheStatus = null;
+    var cacheStatusAvailable = false;
+
+    function displayValue(key, value, available) {
+        if (!available || value === undefined || value === null || value === '') return 'N/A';
+        if (key === 'asn') return 'AS' + value;
+        if (key === 'clientTcpRtt' || key === 'clientQuicRtt') return value + ' ms';
+        return String(value);
+    }
+
+    function render() {
         list.textContent = '';
-        fields.forEach(function (field) {
+        traceFields.forEach(function (field) {
             var item = document.createElement('li');
-            item.textContent = field[1] + '\uFF1A' + (available && Object.prototype.hasOwnProperty.call(values, field[0]) ? values[field[0]] : 'N/A');
+            item.textContent = field[1] + '\uFF1A' + displayValue(field[0], traceValues[field[0]], traceAvailable);
             list.appendChild(item);
         });
-        Object.keys(values).forEach(function (key) {
+
+        workerFields.forEach(function (field) {
+            var available = field[0] === 'cacheStatus' ? cacheStatusAvailable : workerAvailable;
+            var value = field[0] === 'cacheStatus' ? cacheStatus : workerValues[field[0]];
+            var item = document.createElement('li');
+            item.textContent = field[1] + '\uFF1A' + displayValue(field[0], value, available);
+            list.appendChild(item);
+        });
+
+        Object.keys(traceValues).forEach(function (key) {
             if (Object.prototype.hasOwnProperty.call(labels, key)) return;
             var item = document.createElement('li');
-            item.textContent = key + '\uFF1A' + values[key];
+            item.textContent = key + '\uFF1A' + traceValues[key];
             list.appendChild(item);
         });
+
         var versionItem = document.createElement('li');
         versionItem.appendChild(document.createTextNode('\u7248\u672c\uFF1A'));
         if (/^[a-f0-9]{40}$/i.test(commitSha)) {
@@ -52,8 +88,7 @@
         list.appendChild(versionItem);
     }
 
-    var values = {};
-    render(values, false);
+    render();
 
     fetch('/cdn-cgi/trace', { cache: 'no-store' })
         .then(function (response) {
@@ -64,11 +99,39 @@
             trace.trim().split(/\r?\n/).filter(Boolean).forEach(function (line) {
                 var separator = line.indexOf('=');
                 if (separator < 0) return;
-                values[line.slice(0, separator)] = line.slice(separator + 1);
+                traceValues[line.slice(0, separator)] = line.slice(separator + 1);
             });
-            if (Object.keys(values).length) render(values, true);
+            traceAvailable = Object.keys(traceValues).length > 0;
+            render();
         })
         .catch(function () {
-            render({}, false);
+            traceAvailable = false;
+            render();
+        });
+
+    fetch('/api/about-website-info', { cache: 'no-store' })
+        .then(function (response) {
+            if (!response.ok) throw new Error('Cloudflare metadata request failed');
+            return response.json();
+        })
+        .then(function (info) {
+            workerValues = info || {};
+            workerAvailable = true;
+            render();
+        })
+        .catch(function () {
+            workerAvailable = false;
+            render();
+        });
+
+    fetch(window.location.href, { method: 'HEAD', cache: 'reload' })
+        .then(function (response) {
+            cacheStatus = response.headers.get('cf-cache-status');
+            cacheStatusAvailable = true;
+            render();
+        })
+        .catch(function () {
+            cacheStatusAvailable = false;
+            render();
         });
 })();
