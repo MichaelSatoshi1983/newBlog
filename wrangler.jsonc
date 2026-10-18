@@ -2,9 +2,14 @@
   "name": "blog123",
   "compatibility_date": "2026-10-18",
   "main": "./worker/index.js",
+  "vars": {
+    "CF_ANALYTICS_ACCOUNT_ID": "ba38db6807b4bd554873cbcf76b6080a",
+    "CF_ANALYTICS_ZONE_ID": "eb2f5eb158d9a3318df3639c625cd8b0",
+    "CF_ANALYTICS_WORKER_NAME": "blog123"
+  },
   "assets": {
     "directory": "./public/",
     "binding": "ASSETS",
-    "run_worker_first": ["/api/about-website-info"]
+    "run_worker_first": ["/api/about-website-info", "/api/about-website-analytics"]
   }
 }
