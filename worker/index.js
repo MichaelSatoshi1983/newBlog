@@ -35,7 +35,6 @@ function graphqlString(value) {
 
 function buildAnalyticsQuery({ accountId, zoneId, workerName, start, end }) {
   const httpFilter = `filter: { datetime_geq: ${graphqlString(start)}, datetime_lt: ${graphqlString(end)}, requestSource: "eyeball" }`;
-  const securityFilter = `filter: { datetime_geq: ${graphqlString(start)}, datetime_lt: ${graphqlString(end)} }`;
   const workerFilter = `filter: { scriptName: ${graphqlString(workerName)}, datetime_geq: ${graphqlString(start)}, datetime_lt: ${graphqlString(end)} }`;
 
   return `query AboutWebsiteAnalytics {
@@ -57,10 +56,6 @@ function buildAnalyticsQuery({ accountId, zoneId, workerName, start, end }) {
         statuses: httpRequestsAdaptiveGroups(${httpFilter}, limit: 20, orderBy: [count_DESC]) {
           count
           dimensions { edgeResponseStatus }
-        }
-        security: firewallEventsAdaptiveGroups(${securityFilter}, limit: 20, orderBy: [count_DESC]) {
-          count
-          dimensions { action source }
         }
       }
       accounts(filter: { accountTag: ${graphqlString(accountId)} }) {
@@ -158,7 +153,6 @@ async function fetchAnalytics(env, range) {
   const total = zone?.requests?.[0] || {};
   const workerSum = worker?.sum || {};
   const workerQuantiles = worker?.quantiles || {};
-  const securityEventsUnavailable = graphqlErrors.some((error) => error.path?.includes("security"));
 
   return jsonResponse({
     range: range.label,
@@ -177,11 +171,6 @@ async function fetchAnalytics(env, range) {
     statuses: (zone?.statuses || []).map((row) => ({
       status: row.dimensions?.edgeResponseStatus ?? "N/A",
       requests: row.count ?? 0
-    })),
-    securityEvents: securityEventsUnavailable ? null : (zone?.security || []).map((row) => ({
-      action: row.dimensions?.action ?? "N/A",
-      source: row.dimensions?.source ?? "N/A",
-      events: row.count ?? 0
     })),
     worker: {
       requests: workerSum.requests ?? null,
