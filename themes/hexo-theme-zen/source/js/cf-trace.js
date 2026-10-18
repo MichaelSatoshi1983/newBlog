@@ -24,12 +24,33 @@
     var workerFields = [
         ['asn', 'ASN'],
         ['asOrganization', '网络组织'],
+        ['clientAcceptEncoding', '客户端 Accept-Encoding'],
+        ['clientQuicRtt', 'QUIC 往返时延'],
+        ['clientTcpRtt', 'TCP 往返时延'],
+        ['colo', 'Worker 接入机房'],
+        ['country', 'Worker 访问国家代码'],
+        ['edgeL4DeliveryRate', '边缘网络传输速率'],
+        ['isEUCountry', '是否来自欧盟'],
+        ['httpProtocol', 'Worker HTTP 协议'],
+        ['hostMetadata', '自定义主机元数据'],
+        ['requestPriority', '浏览器请求优先级'],
+        ['tlsCipher', 'TLS 加密套件'],
+        ['tlsClientAuth', 'mTLS 客户端证书信息'],
+        ['tlsClientCiphersSha1', 'TLS 客户端密码套件 SHA-1'],
+        ['tlsClientExtensionsSha1', 'TLS 客户端扩展 SHA-1'],
+        ['tlsClientExtensionsSha1Le', 'TLS 客户端扩展 SHA-1（小端）'],
+        ['tlsClientHelloLength', 'TLS ClientHello 长度'],
+        ['tlsClientRandom', 'TLS ClientHello 随机值'],
+        ['tlsVersion', 'Worker TLS 版本'],
         ['continent', '访问大洲'],
         ['city', 'IP 定位城市'],
+        ['latitude', 'IP 定位纬度'],
+        ['longitude', 'IP 定位经度'],
+        ['postalCode', 'IP 定位邮编'],
+        ['metroCode', 'IP 定位都会区代码'],
         ['region', 'IP 定位地区'],
+        ['regionCode', 'IP 定位地区代码'],
         ['timezone', '访问者时区'],
-        ['clientTcpRtt', 'TCP 往返时延'],
-        ['clientQuicRtt', 'QUIC 往返时延'],
         ['cfRay', 'CF-Ray 请求标识'],
         ['cacheStatus', '页面缓存状态']
     ];
@@ -47,6 +68,8 @@
         if (!available || value === undefined || value === null || value === '') return 'N/A';
         if (key === 'asn') return 'AS' + value;
         if (key === 'clientTcpRtt' || key === 'clientQuicRtt') return value + ' ms';
+        if (key === 'edgeL4DeliveryRate') return value + ' B/s';
+        if (typeof value === 'object') return JSON.stringify(value);
         return String(value);
     }
 
