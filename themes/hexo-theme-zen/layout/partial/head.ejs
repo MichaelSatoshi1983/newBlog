@@ -1,5 +1,18 @@
 <head>
-    <script>(function(){var s='zen-theme-mode';var l=localStorage.getItem(s);var g=l||(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');if(g==='dark'){document.documentElement.classList.add('dark');}})();</script>
+    <script>
+        (function() {
+            var STORAGE_KEY = 'zen-theme-mode';
+            var stored = null;
+            try {
+                stored = localStorage.getItem(STORAGE_KEY);
+            } catch (e) {
+                stored = null;
+            }
+            var isDark = stored === 'dark' || (stored !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+            document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+            document.documentElement.classList.toggle('dark', isDark);
+        })();
+    </script>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5">
     <meta name="description" content="<%= config.description %>">
@@ -12,8 +25,195 @@
     </title>
     <%- css('css/style.min') %>
     <%- css('css/partial/atom-one-dark.min') %>
+    <link rel="stylesheet" href="https://cn-font.claude-code-best.win/packages/maple-mono-cn/dist/MapleMono-CN-Regular/result.css">
+    <link rel="stylesheet" href="https://cn-font.claude-code-best.win/packages/LxgwNeoZhiSong/dist/LXGWNeoZhiSong/result.css">
     <style>
-        @import url('https://fonts.font.im/css?family=IBM+Plex+Mono');
+        html { scroll-behavior: smooth; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+        header, main, footer { animation: fadeInUp 0.3s ease; }
+        :root {
+          --font-main: "LXGW Neo ZhiSong", Verdana, sans-serif;
+          --font-secondary: "LXGW Neo ZhiSong", Verdana, sans-serif;
+        }
+
+        .post-content blockquote {
+          border-left: 4px solid var(--border-color);
+          color: var(--text-color);
+          padding: 4px 0 4px 20px;
+          margin: 1em 0;
+          font-style: normal;
+          background: var(--surface-color);
+        }
+        .post-content table {
+          width: 100%;
+          border-collapse: collapse;
+          margin: 1em 0;
+          font-size: 0.95em;
+        }
+        .post-content th, .post-content td {
+          border: 1px solid var(--border-color);
+          padding: 8px 12px;
+          text-align: left;
+        }
+        .post-content th {
+          background: var(--surface-color);
+          font-weight: 600;
+        }
+        .post-content tr:nth-child(even) {
+          background: var(--surface-color);
+        }
+        @media (max-width: 600px) {
+          .post-content table { display: block; overflow-x: auto; }
+        }
+        /* prevent table font-size cascading into code blocks */
+        .post-content figure.highlight table { font-size: inherit; }
+        .post-nav {
+          display: flex;
+          justify-content: space-between;
+          margin: 2em 0;
+          padding-top: 1em;
+          border-top: 1px solid var(--border-color);
+          gap: 1em;
+        }
+        .post-nav a {
+          max-width: 45%;
+          color: var(--link-color);
+        }
+        .post-nav-next { margin-left: auto; text-align: right; }
+        .pagination {
+          margin: 2em 0;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+        .pagination a { color: var(--link-color); }
+        .pagination a:hover { text-decoration: underline; }
+        .pagination-info { color: var(--muted-text-color); font-size: 0.9em; }
+        .pagination-prev { flex: 1; }
+        .pagination-next { flex: 1; text-align: right; }
+        .pagination .disabled { color: var(--muted-text-color); pointer-events: none; }
+        @media (max-width: 480px) {
+          .pagination { flex-direction: column; gap: 0.5em; text-align: center; }
+          .pagination-next { text-align: center; }
+        }
+        ::selection { background: var(--link-color); color: #fff; }
+        img { border-radius: 4px; }
+        .post-date i, .post-date time,
+        main > p > i { font-style: normal; }
+        .reading-time { color: var(--muted-text-color); }
+        code { font-size: 0.82em; font-family: "Maple Mono CN", monospace; }
+        .post-content figure.highlight td.gutter pre,
+        .post-content figure.highlight td.code pre,
+        .post-content .highlight:not(figure) pre {
+          font-size: 0.82em;
+          font-family: "Maple Mono CN", monospace;
+        }
     </style>
     <script src="<%- url_for('js/theme-toggle.js') %>"></script>
+    <style>
+        .post-content h1:hover .anchor,
+        .post-content h2:hover .anchor,
+        .post-content h3:hover .anchor,
+        .post-content h4:hover .anchor,
+        .post-content h5:hover .anchor,
+        .post-content h6:hover .anchor { opacity: 1; }
+        .post-content .anchor { opacity: 0; margin-left: 6px; color: var(--muted-text-color); text-decoration: none; font-weight: 400; }
+        .post-content .anchor:hover { color: var(--link-color); }
+        .code-copy { position: absolute; top: 6px; right: 8px; padding: 2px 8px; font-size: 0.78em; border: 1px solid var(--border-color); border-radius: 4px; background: var(--surface-color); color: var(--muted-text-color); cursor: pointer; opacity: 1; transition: opacity 0.2s; z-index: 1; }
+        .post-content figure.highlight:hover .code-copy,
+        .post-content .highlight:not(figure):hover .code-copy { opacity: 1; }
+        .post-content figure.highlight, .post-content .highlight:not(figure) { position: relative; }
+        .toc-wrap { position: fixed; left: 50%; top: 100px; margin-left: 400px; width: 220px; font-size: 0.84em; max-height: 70vh; overflow-y: auto; display: none; }
+        .toc-wrap a { display: block; color: var(--muted-text-color); padding: 2px 0; text-decoration: none; border-left: 2px solid transparent; padding-left: 12px; }
+        .toc-wrap a:hover { color: var(--link-color); }
+        .toc-wrap a.active { color: var(--heading-color); border-left-color: var(--link-color); }
+        .toc-wrap .toc-h3 { padding-left: 24px; font-size: 0.95em; }
+        .related-posts { margin: 1.5em 0; padding-top: 1em; }
+        .related-posts h3 { font-size: 1em; margin-bottom: 0.5em; }
+        .related-link { display: inline-block; margin-right: 12px; margin-bottom: 6px; color: var(--link-color); font-size: 0.92em; }
+        .related-link:hover { text-decoration: underline; }
+        .empty-related { color: var(--muted-text-color); font-size: 0.9em; }
+        @media (min-width: 1200px) { .toc-wrap { display: block; } }
+    </style>
+    <script>
+        document.addEventListener('DOMContentLoaded', function(){
+            // TOC
+            var toc = document.createElement('nav');
+            toc.className = 'toc-wrap';
+            var headings = document.querySelectorAll('.post-content h2, .post-content h3');
+            if (headings.length > 0) {
+                var html = '';
+                headings.forEach(function(h){
+                    if (!h.id) h.id = h.textContent.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^\w一-鿿-]/g, '');
+                    var cls = h.tagName === 'H3' ? 'toc-h3' : 'toc-h2';
+                    html += '<a class="' + cls + '" href="#' + h.id + '">' + h.textContent.replace(/#$/, '') + '</a>';
+                });
+                toc.innerHTML = html;
+                document.body.appendChild(toc);
+                var links = toc.querySelectorAll('a');
+                // Click TOC → immediate highlight, no scroll-position race
+                links.forEach(function(l){
+                    l.addEventListener('click', function(){
+                        links.forEach(function(x){ x.classList.remove('active'); });
+                        l.classList.add('active');
+                    });
+                });
+                // Scroll → highlight nearest heading within 50px of viewport top
+                window.addEventListener('scroll', function(){
+                    var cur = '';
+                    for (var i = headings.length - 1; i >= 0; i--) {
+                        if (headings[i].getBoundingClientRect().top <= 50) {
+                            cur = '#' + headings[i].id; break;
+                        }
+                    }
+                    if (!cur && headings.length) cur = '#' + headings[0].id;
+                    links.forEach(function(l){ l.classList.toggle('active', l.getAttribute('href') === cur); });
+                });
+            }
+            // Heading anchors
+            document.querySelectorAll('.post-content h1[id],.post-content h2[id],.post-content h3[id],.post-content h4[id],.post-content h5[id],.post-content h6[id]').forEach(function(h){
+                var a = document.createElement('a');
+                a.className = 'anchor';
+                a.href = '#' + h.id;
+                a.textContent = '#';
+                h.appendChild(a);
+            });
+            // Show the code language on the copy button.
+            function languageFor(wrapper){
+                var match = (wrapper.className || '').match(/\bhighlight\s+([\w+#.-]+)/);
+                var language = match ? match[1] : 'Code';
+                if (language.toLowerCase() === 'plaintext') return 'Plain text';
+                if (language.toLowerCase() === 'text') return 'Text';
+                return language;
+            }
+            function addCopyButton(wrapper, pre){
+                var language = languageFor(wrapper);
+                var btn = document.createElement('button');
+                btn.className = 'code-copy';
+                btn.textContent = language;
+                btn.setAttribute('aria-label', '复制 ' + language + ' 代码');
+                wrapper.style.position = 'relative';
+                wrapper.appendChild(btn);
+                btn.addEventListener('click', function(){
+                    var code = pre.querySelector('code') || pre;
+                    navigator.clipboard.writeText(code.textContent).then(function(){
+                        btn.textContent = '已复制';
+                        btn.setAttribute('aria-label', '已复制');
+                        setTimeout(function(){
+                            btn.textContent = language;
+                            btn.setAttribute('aria-label', '复制 ' + language + ' 代码');
+                        }, 2000);
+                    });
+                });
+            }
+            document.querySelectorAll('.post-content figure.highlight, .post-content .highlight:not(figure)').forEach(function(wrapper){
+                var pre = wrapper.querySelector('td.code pre') || wrapper.querySelector('pre');
+                if (pre) addCopyButton(wrapper, pre);
+            });
+            document.querySelectorAll('.post-content pre').forEach(function(pre){
+                if (!pre.closest('.highlight')) addCopyButton(pre, pre);
+            });
+        });
+    </script>
 </head>

@@ -22,4 +22,11 @@
     <span>
         Theme <a href="https://github.com/mouyase/hexo-theme-zen">Zen</a>
     </span>
+    <span id="cdn-node"></span>
 </footer>
+<script>
+    fetch('/cdn-cgi/trace').then(r=>r.text()).then(t=>{
+        var m = t.match(/colo=(\w+)/);
+        if (m) document.getElementById('cdn-node').textContent = ' | CDN: ' + m[1];
+    }).catch(function(){});
+</script>

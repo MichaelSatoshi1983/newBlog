@@ -9,5 +9,11 @@
         <% if (page.path !== '404.html') { %>
             <%- partial('partial/footer') %>
         <% } %>
+        <button id="back-to-top" onclick="window.scrollTo({top:0,behavior:'smooth'})" style="display:none;position:fixed;bottom:24px;right:24px;width:40px;height:40px;border:1px solid var(--border-color);border-radius:8px;background:var(--surface-color);color:var(--text-color);cursor:pointer;font-size:18px;z-index:999">↑</button>
+        <script>
+            window.addEventListener('scroll', function(){
+                document.getElementById('back-to-top').style.display = window.scrollY > 300 ? 'block' : 'none';
+            });
+        </script>
     </body>
 </html>

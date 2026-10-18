@@ -1,17 +1,25 @@
 <main>
     <ul class="blog-posts">
-        <% var posts=site.posts.sort('date', 'desc' ); %>
-            <% posts.forEach(post=> { %>
-                <li>
-                    <span class="post-date">
-                        <i>
-                            <time>
-                                <%= date(post.date, 'YYYY/MM/DD' ) %>
-                            </time>
-                        </i>
-                    </span>
-                    <a href="<%- url_for(post.path) %>"><%- post.title %></a>
-                </li>
-                <% }) %>
+        <% page.posts.each(post=> { %>
+            <li>
+                <span class="post-date">
+                    <i>
+                        <time>
+                            <%= date(post.date, 'YYYY/MM/DD' ) %>
+                        </time>
+                    </i>
+                </span>
+                <a href="<%- url_for(post.path) %>"><%- post.title %></a>
+            </li>
+        <% }) %>
     </ul>
+    <nav class="pagination">
+        <span class="pagination-prev">
+            <% if (page.prev) { %><a href="<%- url_for(page.prev_link) %>">← 上一页</a><% } %>
+        </span>
+        <span class="pagination-info">第 <%= page.current %> 页 / 共 <%= page.total %> 页</span>
+        <span class="pagination-next">
+            <% if (page.next) { %><a href="<%- url_for(page.next_link) %>">下一页 →</a><% } %>
+        </span>
+    </nav>
 </main>
