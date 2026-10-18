@@ -134,20 +134,31 @@ async function fetchAnalytics(env, range) {
   if (!upstream.ok) {
     throw new AnalyticsRequestError("upstream_http", "Cloudflare Analytics rejected the request", upstream.status, graphqlErrors);
   }
-  if (graphqlErrors.length) {
-    throw new AnalyticsRequestError("graphql", "Cloudflare Analytics query failed", upstream.status, graphqlErrors);
-  }
 
   const viewer = payload.data?.viewer;
-  const zone = viewer?.zones?.[0];
+  const zone = viewer?.zones?.[0] ?? null;
   const worker = viewer?.accounts?.[0]?.worker?.[0];
-  if (!zone) {
+  const hasPartialData = Boolean(
+    viewer && ((viewer.zones?.length ?? 0) > 0 || (viewer.accounts?.length ?? 0) > 0)
+  );
+  if (graphqlErrors.length && !hasPartialData) {
+    throw new AnalyticsRequestError("graphql", "Cloudflare Analytics query failed", upstream.status, graphqlErrors);
+  }
+  if (graphqlErrors.length) {
+    console.warn(JSON.stringify({
+      event: "cloudflare_analytics_partial_response",
+      upstreamStatus: upstream.status,
+      details: graphqlErrors
+    }));
+  }
+  if (!zone && !graphqlErrors.length) {
     throw new AnalyticsRequestError("zone_data", "Cloudflare Analytics returned no data for the configured zone", upstream.status);
   }
 
-  const total = zone.requests?.[0] || {};
+  const total = zone?.requests?.[0] || {};
   const workerSum = worker?.sum || {};
   const workerQuantiles = worker?.quantiles || {};
+  const securityEventsUnavailable = graphqlErrors.some((error) => error.path?.includes("security"));
 
   return jsonResponse({
     range: range.label,
@@ -155,19 +166,19 @@ async function fetchAnalytics(env, range) {
     requests: total.count ?? null,
     trafficBytes: total.sum?.edgeResponseBytes ?? null,
     sampleInterval: total.avg?.sampleInterval ?? null,
-    cache: (zone.cache || []).map((row) => ({
+    cache: (zone?.cache || []).map((row) => ({
       status: row.dimensions?.cacheStatus ?? "N/A",
       requests: row.count ?? 0
     })),
-    countries: (zone.countries || []).map((row) => ({
+    countries: (zone?.countries || []).map((row) => ({
       country: row.dimensions?.clientCountryName ?? "N/A",
       requests: row.count ?? 0
     })),
-    statuses: (zone.statuses || []).map((row) => ({
+    statuses: (zone?.statuses || []).map((row) => ({
       status: row.dimensions?.edgeResponseStatus ?? "N/A",
       requests: row.count ?? 0
     })),
-    securityEvents: (zone.security || []).map((row) => ({
+    securityEvents: securityEventsUnavailable ? null : (zone?.security || []).map((row) => ({
       action: row.dimensions?.action ?? "N/A",
       source: row.dimensions?.source ?? "N/A",
       events: row.count ?? 0
@@ -178,7 +189,8 @@ async function fetchAnalytics(env, range) {
       subrequests: workerSum.subrequests ?? null,
       cpuTimeP50: workerQuantiles.cpuTimeP50 ?? null,
       cpuTimeP99: workerQuantiles.cpuTimeP99 ?? null
-    }
+    },
+    ...(graphqlErrors.length ? { diagnostics: graphqlErrors } : {})
   }, 200, {
     "Cache-Control": `public, max-age=${ANALYTICS_CACHE_SECONDS}, s-maxage=${ANALYTICS_CACHE_SECONDS}`
   });
