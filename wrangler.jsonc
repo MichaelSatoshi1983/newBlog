@@ -2,6 +2,13 @@
   "name": "blog123",
   "compatibility_date": "2026-10-18",
   "main": "./worker/index.js",
+  "workers_dev": true,
+  "routes": [
+    {
+      "pattern": "www.eth0.bond/api/about-website-info*",
+      "zone_name": "eth0.bond"
+    }
+  ],
   "assets": {
     "directory": "./public/",
     "binding": "ASSETS",
