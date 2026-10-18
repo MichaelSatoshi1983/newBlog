@@ -1,0 +1,64 @@
+name: AI Code Review
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    container:
+      image: alpine:3.19
+    permissions:
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Review
+        env:
+          SILICONFLOW_API_KEY: ${{ secrets.SILICONFLOW_API_KEY }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          apk add --no-cache curl jq git > /dev/null
+
+          git diff origin/${{ github.base_ref }}...HEAD | tail -c 40000 > /tmp/diff.txt
+
+          post() {
+            body=$(printf '%s' "$1" | jq -Rs '{body: "## 🤖 AI Code Review\n\n\(.)"}')
+            curl -s -X POST \
+              -H "Authorization: token $GH_TOKEN" \
+              -H "Accept: application/vnd.github.v3+json" \
+              "https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments" \
+              -d "$body" > /dev/null
+          }
+
+          if [ -z "$SILICONFLOW_API_KEY" ]; then
+            post "⚠️ SILICONFLOW_API_KEY not set. Add it to GitHub Secrets."
+            exit 0
+          fi
+
+          JSON=$(cat /tmp/diff.txt | jq -Rs '{
+              model: "deepseek-ai/DeepSeek-V3.2",
+              messages: [
+                {
+                  role: "system",
+                  content: "You are a PRECISE code reviewer. ONLY review files that appear in the diff. NEVER invent files, line numbers, or issues. If you are unsure about something, skip it. English only."
+                },
+                {
+                  role: "user",
+                  content: ("Review this diff. Check ONLY the files and lines actually changed.\n\nCHECKLIST:\n1. LOGIC — wrong condition, off-by-one, missing edge case\n2. SECURITY — XSS, injection, unsafe DOM\n3. CSS — selector leaks, missing fallbacks, mobile breakage\n4. TEMPLATE — unescaped output, broken EJS syntax\n5. PERFORMANCE — redundant work, layout thrashing\n6. ACCESSIBILITY — missing labels, contrast, keyboard nav\n7. MAINTAINABILITY — hardcoded values, fragile selectors\n8. BROWSER — vendor prefixes, compat issues\n\nOutput ONLY for real issues in the actual diff. Do NOT guess or fabricate.\n\nFor each real finding:\n- FILE: (must appear in diff)\n- LINE: (must be in changed lines)\n- CATEGORY: (1-8)\n- SEVERITY: 🔴 MUST FIX / 🟡 SHOULD FIX / 🔵 SUGGESTION\n- EVIDENCE: quote the exact code\n- FIX: exact change needed\n\nAfter checking all files, if nothing wrong:\n✅ LGTM\n\n```diff\n" + . + "\n```")
+                }
+              ],
+              temperature: 0.1,
+              max_tokens: 2000
+            }')
+
+          RESPONSE=$(curl -s https://api.siliconflow.cn/v1/chat/completions \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer $SILICONFLOW_API_KEY" \
+            -d "$JSON")
+
+          REVIEW=$(echo "$RESPONSE" | jq -r '.choices[0].message.content // "Error: " + (.error.message // "unknown")')
+
+          post "$REVIEW"

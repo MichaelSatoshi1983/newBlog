@@ -2,12 +2,33 @@
 <div id="twikoo"></div>
 <%- js('js/twikoo.all.min') %>
 <script>
-    const isDark = document.documentElement.classList.contains('dark');
-    twikoo.init({
-        envId: '<%= theme.twikoo.envId %>',
-        el: '#twikoo',
-        region: '<%= theme.twikoo.region || "" %>',
-        lang: '<%= theme.twikoo.lang || "zh-cn" %>',
-        theme: { dark: 'dark', light: 'light' }
-    })
+    (function() {
+        function getThemeName() {
+            return document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+        }
+
+        function syncTwikooThemeClass(themeName) {
+            var root = document.getElementById('twikoo');
+            if (!root) {
+                return;
+            }
+            root.classList.toggle('twikoo-theme-dark', themeName === 'dark');
+            root.classList.toggle('twikoo-theme-light', themeName !== 'dark');
+        }
+
+        twikoo.init({
+            envId: '<%= theme.twikoo.envId %>',
+            el: '#twikoo',
+            region: '<%= theme.twikoo.region || "" %>',
+            lang: '<%= theme.twikoo.lang || "zh-cn" %>',
+            theme: { dark: 'dark', light: 'light' }
+        });
+
+        syncTwikooThemeClass(getThemeName());
+
+        document.addEventListener('theme-change', function(event) {
+            var themeName = event && event.detail && event.detail.theme ? event.detail.theme : getThemeName();
+            syncTwikooThemeClass(themeName);
+        });
+    })();
 </script>

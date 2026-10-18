@@ -6,10 +6,14 @@
     (function() {
         const BEAUDAR_ORIGIN = 'https://beaudar.lipk.org';
         const SYNC_CLASS = 'theme-syncing';
-        const SYNC_DURATION = 300;
+        const SYNC_DURATION = 320;
         let pendingTheme = null;
         let hasInitialized = false;
         let transitionTimer = null;
+
+        function getThemeName() {
+            return document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+        }
 
         function getBeaudarTheme(theme) {
             return theme === 'dark' ? 'github-dark' : 'github-light';
@@ -74,7 +78,6 @@
             }
 
             const container = getContainer();
-            
             const script = document.createElement('script');
             script.src = 'https://beaudar.lipk.org/client.js';
             script.setAttribute('repo', '<%= theme.beaudar.repo %>');
@@ -91,7 +94,6 @@
             hasInitialized = true;
             container.appendChild(script);
         }
-
 
         const containerObserver = new MutationObserver(function(mutations) {
             mutations.forEach(function(mutation) {
@@ -116,13 +118,8 @@
         }
 
         document.addEventListener('theme-change', function(event) {
-            if (event && event.detail && event.detail.theme) {
-                syncBeaudarTheme(event.detail.theme);
-                return;
-            }
-
-            const isDark = document.documentElement.classList.contains('dark');
-            syncBeaudarTheme(isDark ? 'dark' : 'light');
+            const themeName = event && event.detail && event.detail.theme ? event.detail.theme : getThemeName();
+            syncBeaudarTheme(themeName);
         });
 
         const initialFrame = getBeaudarFrame();
@@ -130,7 +127,6 @@
             bindFrameThemeSync(initialFrame);
         }
 
-        const isDark = document.documentElement.classList.contains('dark');
-        syncBeaudarTheme(isDark ? 'dark' : 'light');
+        syncBeaudarTheme(getThemeName());
     })();
 </script>
