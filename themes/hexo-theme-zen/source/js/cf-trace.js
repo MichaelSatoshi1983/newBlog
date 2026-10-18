@@ -2,6 +2,11 @@
     var list = document.getElementById('trace-list');
     if (!list) return;
     var commitSha = list.getAttribute('data-version') || '';
+    var rangeSelector = document.getElementById('analytics-range');
+    var rangeLabels = { '24h': '近24小时', '7d': '近7天', '30d': '近30天' };
+    var browserLanguage = (navigator.languages && navigator.languages.length
+        ? navigator.languages.filter(Boolean).join(', ')
+        : navigator.language) || null;
 
     var traceFields = [
         ['fl', 'Cloudflare 实例标识'],
@@ -63,6 +68,35 @@
     var workerAvailable = false;
     var cacheStatus = null;
     var cacheStatusAvailable = false;
+    var analyticsValues = {};
+    var analyticsAvailable = false;
+    var pageLoadTime = null;
+
+    function getPageLoadTime() {
+        if (!window.performance) return null;
+        var navigationEntries = performance.getEntriesByType && performance.getEntriesByType('navigation');
+        if (navigationEntries && navigationEntries.length && navigationEntries[0].loadEventEnd > 0) {
+            return Math.round(navigationEntries[0].loadEventEnd - navigationEntries[0].startTime);
+        }
+        var timing = performance.timing;
+        if (timing && timing.loadEventEnd > 0 && timing.navigationStart > 0) {
+            return Math.round(timing.loadEventEnd - timing.navigationStart);
+        }
+        return null;
+    }
+
+    function updatePageLoadTime() {
+        pageLoadTime = getPageLoadTime();
+        render();
+    }
+
+    if (document.readyState === 'complete') {
+        window.setTimeout(updatePageLoadTime, 0);
+    } else {
+        window.addEventListener('load', function () {
+            window.setTimeout(updatePageLoadTime, 0);
+        }, { once: true });
+    }
 
     function displayValue(key, value, available) {
         if (!available || value === undefined || value === null || value === '') return 'N/A';
@@ -73,6 +107,64 @@
         return String(value);
     }
 
+    function formatBytes(value) {
+        if (value === undefined || value === null || value === '') return 'N/A';
+        var bytes = Number(value);
+        if (!isFinite(bytes)) return 'N/A';
+        var units = ['B', 'KB', 'MB', 'GB', 'TB'];
+        var unit = 0;
+        while (bytes >= 1024 && unit < units.length - 1) {
+            bytes /= 1024;
+            unit++;
+        }
+        return (unit === 0 ? Math.round(bytes) : bytes.toFixed(2)) + ' ' + units[unit];
+    }
+
+    function formatBreakdown(rows, nameKey, countKey) {
+        if (!Array.isArray(rows) || !rows.length) return 'N/A';
+        return rows.map(function (row) {
+            return row[nameKey] + ': ' + row[countKey];
+        }).join('，');
+    }
+
+    function formatSecurityEvents(rows) {
+        if (!Array.isArray(rows)) return 'N/A';
+        if (!rows.length) return '0';
+        return rows.map(function (row) {
+            return row.source + '/' + row.action + ': ' + row.events;
+        }).join('，');
+    }
+
+    function formatWorkerCpu(value) {
+        var formatted = displayValue('workerCpu', value, true);
+        return formatted === 'N/A' ? formatted : formatted + ' μs';
+    }
+
+    function currentRange() {
+        return rangeSelector && rangeLabels[rangeSelector.value] ? rangeSelector.value : '24h';
+    }
+
+    function loadAnalytics() {
+        analyticsAvailable = false;
+        analyticsValues = {};
+        render();
+
+        fetch('/api/about-website-analytics?range=' + encodeURIComponent(currentRange()), { cache: 'no-store' })
+            .then(function (response) {
+                if (!response.ok) throw new Error('Cloudflare Analytics request failed');
+                return response.json();
+            })
+            .then(function (analytics) {
+                analyticsValues = analytics || {};
+                analyticsAvailable = true;
+                render();
+            })
+            .catch(function () {
+                analyticsAvailable = false;
+                render();
+            });
+    }
+
     function render() {
         list.textContent = '';
         traceFields.forEach(function (field) {
@@ -80,6 +172,14 @@
             item.textContent = field[1] + '\uFF1A' + displayValue(field[0], traceValues[field[0]], traceAvailable);
             list.appendChild(item);
         });
+
+        var languageItem = document.createElement('li');
+        languageItem.textContent = '浏览器语言：' + (browserLanguage || 'N/A');
+        list.appendChild(languageItem);
+
+        var loadTimeItem = document.createElement('li');
+        loadTimeItem.textContent = '本次页面加载耗时：' + (pageLoadTime === null ? 'N/A' : pageLoadTime + ' ms');
+        list.appendChild(loadTimeItem);
 
         workerFields.forEach(function (field) {
             var available = field[0] === 'cacheStatus' ? cacheStatusAvailable : workerAvailable;
@@ -109,6 +209,27 @@
             versionItem.appendChild(document.createTextNode('N/A'));
         }
         list.appendChild(versionItem);
+
+        var selectedRange = currentRange();
+        var analyticsFields = [
+            ['统计时间范围', rangeLabels[selectedRange]],
+            ['请求量', analyticsAvailable ? displayValue('requests', analyticsValues.requests, true) : 'N/A'],
+            ['流量', analyticsAvailable ? formatBytes(analyticsValues.trafficBytes) : 'N/A'],
+            ['缓存情况', analyticsAvailable ? formatBreakdown(analyticsValues.cache, 'status', 'requests') : 'N/A'],
+            ['地区分布', analyticsAvailable ? formatBreakdown(analyticsValues.countries, 'country', 'requests') : 'N/A'],
+            ['状态码分布', analyticsAvailable ? formatBreakdown(analyticsValues.statuses, 'status', 'requests') : 'N/A'],
+            ['安全事件', analyticsAvailable ? formatSecurityEvents(analyticsValues.securityEvents) : 'N/A'],
+            ['Worker 调用数', analyticsAvailable ? displayValue('workerRequests', analyticsValues.worker && analyticsValues.worker.requests, true) : 'N/A'],
+            ['Worker 错误数', analyticsAvailable ? displayValue('workerErrors', analyticsValues.worker && analyticsValues.worker.errors, true) : 'N/A'],
+            ['Worker 子请求数', analyticsAvailable ? displayValue('workerSubrequests', analyticsValues.worker && analyticsValues.worker.subrequests, true) : 'N/A'],
+            ['Worker CPU P50', analyticsAvailable ? formatWorkerCpu(analyticsValues.worker && analyticsValues.worker.cpuTimeP50) : 'N/A'],
+            ['Worker CPU P99', analyticsAvailable ? formatWorkerCpu(analyticsValues.worker && analyticsValues.worker.cpuTimeP99) : 'N/A']
+        ];
+        analyticsFields.forEach(function (field) {
+            var item = document.createElement('li');
+            item.textContent = field[0] + '\uFF1A' + field[1];
+            list.appendChild(item);
+        });
     }
 
     render();
@@ -157,4 +278,9 @@
             cacheStatusAvailable = false;
             render();
         });
+
+    if (rangeSelector) {
+        rangeSelector.addEventListener('change', loadAnalytics);
+    }
+    loadAnalytics();
 })();
