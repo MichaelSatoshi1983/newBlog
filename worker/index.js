@@ -74,15 +74,24 @@ function buildAnalyticsQuery({ accountId, zoneId, workerName, start, end }) {
 }
 
 function getSafeGraphQLErrors(errors, env) {
+  const sensitiveValues = [env.CF_ANALYTICS_TOKEN, env.CF_ANALYTICS_ACCOUNT_ID, env.CF_ANALYTICS_ZONE_ID]
+    .filter(Boolean)
+    .map(String);
+  const redact = (value) => sensitiveValues.reduce(
+    (safeValue, sensitiveValue) => safeValue.replaceAll(sensitiveValue, "[redacted]"),
+    String(value)
+  );
+
   return errors.slice(0, 3).map((error) => {
-    let message = String(error.message || "GraphQL query failed");
-    for (const sensitiveValue of [env.CF_ANALYTICS_TOKEN, env.CF_ANALYTICS_ACCOUNT_ID, env.CF_ANALYTICS_ZONE_ID]) {
-      if (sensitiveValue) message = message.replaceAll(String(sensitiveValue), "[redacted]");
-    }
+    const message = redact(error.message || "GraphQL query failed");
+    const path = Array.isArray(error.path)
+      ? error.path.map((segment) => (typeof segment === "string" ? redact(segment) : segment))
+      : undefined;
 
     return {
       code: error.extensions?.code ?? null,
-      message: message.slice(0, 300)
+      message: message.slice(0, 300),
+      ...(path ? { path } : {})
     };
   });
 }
