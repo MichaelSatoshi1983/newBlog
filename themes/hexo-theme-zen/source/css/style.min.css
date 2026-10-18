@@ -31,7 +31,7 @@ html[data-theme='dark'] {
   --surface-color: #242424;
   --heading-color: #e0e0e0;
   --text-color: #d0d0d0;
-  --muted-text-color: rgba(208, 208, 208, 0.5);
+  --muted-text-color: rgba(208, 208, 208, 0.7);
   --link-color: #6fa3ff;
   --visited-color: #b4a0e8;
 
@@ -599,4 +599,28 @@ html.theme-animating #beaudar-container .beaudar-theme-mask {
   html.theme-animating *::after {
     transition: none !important;
   }
+}
+
+#font-toggle {
+  position: fixed;
+  top: 20px;
+  right: 72px;
+  z-index: 1000;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 8px;
+  border: 1px solid var(--toggle-border);
+  border-radius: 999px;
+  background: var(--toggle-bg);
+  backdrop-filter: blur(6px);
+  color: var(--text-color);
+  cursor: pointer;
+  font: 600 13px/1 system-ui, sans-serif;
+}
+#font-toggle:focus-visible {
+  outline: 2px solid var(--link-color);
+  outline-offset: 2px;
 }
