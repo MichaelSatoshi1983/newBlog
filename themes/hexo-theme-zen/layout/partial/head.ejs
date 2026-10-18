@@ -11,6 +11,13 @@
             var isDark = stored === 'dark' || (stored !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
             document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
             document.documentElement.classList.toggle('dark', isDark);
+            var fontMode = 'custom';
+            try {
+                fontMode = localStorage.getItem('zen-font-mode') === 'original' ? 'original' : 'custom';
+            } catch (e) {
+                fontMode = 'custom';
+            }
+            document.documentElement.setAttribute('data-font-mode', fontMode);
         })();
     </script>
     <meta charset="utf-8">
@@ -27,13 +34,25 @@
     <% if (page.content && /class=["'][^"']*highlight/.test(page.content)) { %>
     <%- css('css/partial/atom-one-dark.min') %>
     <% } %>
-    <link rel="stylesheet" href="https://cn-font.claude-code-best.win/packages/maple-mono-cn/dist/MapleMono-CN-Regular/result.css">
-    <link rel="stylesheet" href="https://cn-font.claude-code-best.win/packages/LxgwNeoZhiSong/dist/LXGWNeoZhiSong/result.css">
+    <%- css('css/fonts/lxgw-neo-zhisong') %>
+    <% if (page.content && /<code\b|class=["\'][^"\']*\bhighlight\b/i.test(page.content)) { %>
+    <%- css('css/fonts/maple-mono-cn-regular') %>
+    <% } %>
     <style>
         html { scroll-behavior: smooth; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
         header, main, footer { animation: fadeInUp 0.3s ease; }
+        @font-face {
+          font-family: "IPA Original ZhiSong Local";
+          src: local("IPAex Mincho"), local("IPAex明朝"), local("IPAmj Mincho"), local("IPAmj明朝");
+          font-style: normal;
+          font-weight: 400;
+        }
+        html[data-font-mode='original'] {
+          --font-main: "IPA Original ZhiSong Local", "Noto Serif CJK SC", "Songti SC", serif;
+          --font-secondary: "IPA Original ZhiSong Local", "Noto Serif CJK SC", "Songti SC", serif;
+        }
         :root {
           --font-main: "LXGW Neo ZhiSong", Verdana, sans-serif;
           --font-secondary: "LXGW Neo ZhiSong", Verdana, sans-serif;
@@ -113,6 +132,7 @@
         }
     </style>
     <script defer src="<%- url_for('js/theme-toggle.js') %>"></script>
+    <script defer src="<%- url_for('js/font-toggle.js') %>"></script>
     <style>
         .post-content h1:hover .anchor,
         .post-content h2:hover .anchor,
