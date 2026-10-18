@@ -24,7 +24,9 @@
         <%= config.title %>
     </title>
     <%- css('css/style.min') %>
+    <% if (page.content && /class=["'][^"']*highlight/.test(page.content)) { %>
     <%- css('css/partial/atom-one-dark.min') %>
+    <% } %>
     <link rel="stylesheet" href="https://cn-font.claude-code-best.win/packages/maple-mono-cn/dist/MapleMono-CN-Regular/result.css">
     <link rel="stylesheet" href="https://cn-font.claude-code-best.win/packages/LxgwNeoZhiSong/dist/LXGWNeoZhiSong/result.css">
     <style>
@@ -110,7 +112,7 @@
           font-family: "Maple Mono CN", monospace;
         }
     </style>
-    <script src="<%- url_for('js/theme-toggle.js') %>"></script>
+    <script defer src="<%- url_for('js/theme-toggle.js') %>"></script>
     <style>
         .post-content h1:hover .anchor,
         .post-content h2:hover .anchor,
