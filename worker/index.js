@@ -8,6 +8,16 @@ const ANALYTICS_RANGES = {
   "30d": { milliseconds: 30 * 24 * 60 * 60 * 1000, label: "30 days" }
 };
 
+class AnalyticsRequestError extends Error {
+  constructor(stage, message, upstreamStatus = null, details = []) {
+    super(message);
+    this.name = "AnalyticsRequestError";
+    this.stage = stage;
+    this.upstreamStatus = upstreamStatus;
+    this.details = details;
+  }
+}
+
 function jsonResponse(data, status = 200, headers = {}) {
   return new Response(JSON.stringify(data), {
     status,
@@ -63,6 +73,20 @@ function buildAnalyticsQuery({ accountId, zoneId, workerName, start, end }) {
   }`;
 }
 
+function getSafeGraphQLErrors(errors, env) {
+  return errors.slice(0, 3).map((error) => {
+    let message = String(error.message || "GraphQL query failed");
+    for (const sensitiveValue of [env.CF_ANALYTICS_TOKEN, env.CF_ANALYTICS_ACCOUNT_ID, env.CF_ANALYTICS_ZONE_ID]) {
+      if (sensitiveValue) message = message.replaceAll(String(sensitiveValue), "[redacted]");
+    }
+
+    return {
+      code: error.extensions?.code ?? null,
+      message: message.slice(0, 300)
+    };
+  });
+}
+
 async function fetchAnalytics(env, range) {
   const now = Date.now();
   const end = new Date(now).toISOString();
@@ -75,25 +99,42 @@ async function fetchAnalytics(env, range) {
     end
   });
 
-  const upstream = await fetch(ANALYTICS_GRAPHQL_ENDPOINT, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${env.CF_ANALYTICS_TOKEN}`,
-      "Content-Type": "application/json",
-      Accept: "application/json"
-    },
-    body: JSON.stringify({ query })
-  });
+  let upstream;
+  try {
+    upstream = await fetch(ANALYTICS_GRAPHQL_ENDPOINT, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${env.CF_ANALYTICS_TOKEN}`,
+        "Content-Type": "application/json",
+        Accept: "application/json"
+      },
+      body: JSON.stringify({ query })
+    });
+  } catch {
+    throw new AnalyticsRequestError("network", "Could not reach the Cloudflare Analytics API");
+  }
 
-  if (!upstream.ok) throw new Error("Cloudflare Analytics request failed");
+  let payload;
+  try {
+    payload = await upstream.json();
+  } catch {
+    throw new AnalyticsRequestError("upstream_response", "Cloudflare Analytics returned an invalid response", upstream.status);
+  }
 
-  const payload = await upstream.json();
-  if (payload.errors?.length) throw new Error("Cloudflare Analytics query failed");
+  const graphqlErrors = getSafeGraphQLErrors(payload.errors || [], env);
+  if (!upstream.ok) {
+    throw new AnalyticsRequestError("upstream_http", "Cloudflare Analytics rejected the request", upstream.status, graphqlErrors);
+  }
+  if (graphqlErrors.length) {
+    throw new AnalyticsRequestError("graphql", "Cloudflare Analytics query failed", upstream.status, graphqlErrors);
+  }
 
   const viewer = payload.data?.viewer;
   const zone = viewer?.zones?.[0];
   const worker = viewer?.accounts?.[0]?.worker?.[0];
-  if (!zone) throw new Error("Cloudflare Analytics returned no zone data");
+  if (!zone) {
+    throw new AnalyticsRequestError("zone_data", "Cloudflare Analytics returned no data for the configured zone", upstream.status);
+  }
 
   const total = zone.requests?.[0] || {};
   const workerSum = worker?.sum || {};
@@ -192,8 +233,17 @@ async function handleAnalyticsRequest(request, env) {
     return request.method === "HEAD"
       ? new Response(null, { status: response.status, headers: response.headers })
       : response;
-  } catch {
-    return jsonResponse({ error: "analytics_unavailable" }, 502, {
+  } catch (error) {
+    const diagnostic = error instanceof AnalyticsRequestError
+      ? {
+          stage: error.stage,
+          upstreamStatus: error.upstreamStatus,
+          details: error.details
+        }
+      : { stage: "internal", upstreamStatus: null, details: [] };
+
+    console.error("about_website_analytics_failed", diagnostic);
+    return jsonResponse({ error: "analytics_unavailable", diagnostic }, 502, {
       "Cache-Control": "no-store"
     });
   }
