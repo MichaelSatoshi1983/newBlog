@@ -24,3 +24,9 @@ beaudar:
   repo : MichaelSatoshi1983/newBlog
   # 填写用于 beaudar 评论系统的分支
   branch: main
+
+# 页脚访问统计配置
+site_stats:
+  enable: true
+  endpoint: https://pv.eth0.bond
+  time_zone: Asia/Shanghai

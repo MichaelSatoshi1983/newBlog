@@ -26,3 +26,9 @@ beaudar:
   repo : mouyase/Yojigen.Tech
   # 填写用于 beaudar 评论系统的分支
   branch: main
+
+# 页脚访问统计配置：PV 为累计浏览量，UV 为所选时区内的每日独立访客数。
+site_stats:
+  enable: true
+  endpoint: https://pv.eth0.bond
+  time_zone: Asia/Shanghai

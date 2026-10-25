@@ -23,4 +23,94 @@
         Theme <a href="https://github.com/mouyase/hexo-theme-zen">Zen</a>
     </span>
     <span><a href="<%- url_for('fonts/licenses.html') %>">字体许可</a></span>
+    <% if (theme.site_stats && theme.site_stats.enable && theme.site_stats.endpoint) { %>
+    <div id="site-stats"
+         data-endpoint="<%= theme.site_stats.endpoint %>"
+         data-time-zone="<%= theme.site_stats.time_zone || 'Asia/Shanghai' %>"
+         aria-live="polite"
+         style="margin-top:10px;font-size:13px;opacity:.8">
+        <span>总 PV <strong data-site-stat="pv">—</strong></span>
+        <span aria-hidden="true"> · </span>
+        <span>今日 UV <strong data-site-stat="uv">—</strong></span>
+    </div>
+    <script>
+    (() => {
+        if (window.__zenSiteStatsStarted) return;
+        window.__zenSiteStatsStarted = true;
+
+        const widget = document.getElementById('site-stats');
+        if (!widget) return;
+
+        const endpointBase = widget.dataset.endpoint.replace(/\/+$/, '');
+        const endpoint = endpointBase + '/collect';
+        const timeZone = widget.dataset.timeZone || 'Asia/Shanghai';
+        const pvNode = widget.querySelector('[data-site-stat="pv"]');
+        const uvNode = widget.querySelector('[data-site-stat="uv"]');
+
+        function localDay() {
+            const parts = new Intl.DateTimeFormat('en-US', {
+                timeZone: timeZone,
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+            }).formatToParts(new Date());
+            const values = Object.fromEntries(parts.map(({ type, value }) => [type, value]));
+            return values.year + '-' + values.month + '-' + values.day;
+        }
+
+        function dailyVisitorId() {
+            const storageKey = 'zen:site-stats:visitor';
+            const day = localDay();
+
+            try {
+                const saved = JSON.parse(localStorage.getItem(storageKey) || 'null');
+                if (saved && saved.day === day && typeof saved.id === 'string') {
+                    return saved.id;
+                }
+            } catch (_) {
+                // Storage may be disabled; the page still works, but UV is approximate.
+            }
+
+            const id = crypto.randomUUID();
+            try {
+                localStorage.setItem(storageKey, JSON.stringify({ day: day, id: id }));
+            } catch (_) {
+                // Do not block the page if storage is unavailable.
+            }
+            return id;
+        }
+
+        function collectWhenVisible() {
+            if (document.prerendering || document.visibilityState === 'hidden') return;
+
+            document.removeEventListener('visibilitychange', collectWhenVisible);
+            document.removeEventListener('prerenderingchange', collectWhenVisible);
+
+            fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ visitorId: dailyVisitorId() }),
+                credentials: 'omit',
+                cache: 'no-store',
+                keepalive: true
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('stats request failed');
+                return response.json();
+            })
+            .then(stats => {
+                if (pvNode) pvNode.textContent = Number(stats.pv).toLocaleString('zh-CN');
+                if (uvNode) uvNode.textContent = Number(stats.uv).toLocaleString('zh-CN');
+            })
+            .catch(() => {
+                // Leave placeholders in place if the statistics service is unavailable.
+            });
+        }
+
+        document.addEventListener('visibilitychange', collectWhenVisible);
+        document.addEventListener('prerenderingchange', collectWhenVisible, { once: true });
+        collectWhenVisible();
+    })();
+    </script>
+    <% } %>
 </footer>
